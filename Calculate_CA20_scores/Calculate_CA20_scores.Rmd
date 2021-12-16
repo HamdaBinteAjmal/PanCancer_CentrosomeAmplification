@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r set working directory}
 
 # Change to directory of cloning
-setwd("~/Documents/CA20_all_TCGA/GitHub/Calculate_CA20_scores/")
+setwd("C:\\LispHome\\PanCancer_CentrosomeAmplification\\Calculate_CA20_scores")
 
 ```
 
@@ -28,8 +28,8 @@ TCGA_cohorts <- TCGA_cohorts_table$Cohort
 ```{r download gene expression data in looping from firebrowse}
 
 # create directory to download TCGA gene expression data
-system("mkdir Firebrowse_download")
-setwd("Firebrowse_download")
+#dir.create("Firebrowse_download")
+#setwd("Firebrowse_download")
 
 Table_final_results <- data.frame()
 
@@ -39,30 +39,32 @@ cohort_TCGA <- TCGA_cohorts[i]
   
 ##### RSEM expression from firebrowse - reads
 
-# download
-if(length(grep(paste("gdac.broadinstitute.org_", cohort_TCGA,".Merge_rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes__data.Level_3.2016012800.0.0", sep=""), list.files())) ==0 ){
-  
-  system(paste("wget http://gdac.broadinstitute.org/runs/stddata__2016_01_28/data/", cohort_TCGA,"/20160128/gdac.broadinstitute.org_", cohort_TCGA,".Merge_rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes__data.Level_3.2016012800.0.0.tar.gz", sep=""))
-  system(paste("tar -zxvf gdac.broadinstitute.org_", cohort_TCGA,".Merge_rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes__data.Level_3.2016012800.0.0.tar.gz", sep=""))
-  system(paste("rm gdac.broadinstitute.org_", cohort_TCGA,".Merge_rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes__data.Level_3.2016012800.0.0.tar.gz", sep=""))
 
-}
+#if(length(grep(paste("gdac.broadinstitute.org_", #cohort_TCGA,".Merge_rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes__data.Level_3.2016012800.0.0", sep=""), #list.files())) ==0 ){
+  
+ #system(paste("wget http://gdac.broadinstitute.org/runs/stddata__2016_01_28/data/", #cohort_TCGA,"/20160128/gdac.broadinstitute.org_", #cohort_TCGA,".Merge_rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes__data.Level_3.2016012800.0.0.tar.gz", sep=""))
+  
+ # system(paste("tar -zxvf gdac.broadinstitute.org_", #cohort_TCGA,".Merge_rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes__data.Level_3.2016012800.0.0.tar.gz", sep=""))
+  
+  ##system(paste("rm gdac.broadinstitute.org_", #cohort_TCGA,".Merge_rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes__data.Level_3.2016012800.0.0.tar.gz", #sep=""))
+
+#}
 
 
 ##### clinical data
 
 # download
-if(length(grep(paste("wget http://gdac.broadinstitute.org/runs/stddata__2016_01_28/data/", cohort_TCGA, "/20160128/gdac.broadinstitute.org_", cohort_TCGA,".Merge_Clinical.Level_1.2016012800.0.0.tar.gz", sep=""), list.files())) ==0 ){
-
-  system(paste("wget http://gdac.broadinstitute.org/runs/stddata__2016_01_28/data/", cohort_TCGA, "/20160128/gdac.broadinstitute.org_", cohort_TCGA,".Merge_Clinical.Level_1.2016012800.0.0.tar.gz", sep=""))
-  system(paste("tar -zxvf gdac.broadinstitute.org_", cohort_TCGA,".Merge_Clinical.Level_1.2016012800.0.0.tar.gz", sep=""))
-  system(paste("rm gdac.broadinstitute.org_", cohort_TCGA,".Merge_Clinical.Level_1.2016012800.0.0.tar.gz", sep=""))
-
-}
+# if(length(grep(paste("wget http://gdac.broadinstitute.org/runs/stddata__2016_01_28/data/", cohort_TCGA, "/20160128/gdac.broadinstitute.org_", cohort_TCGA,".Merge_Clinical.Level_1.2016012800.0.0.tar.gz", sep=""), list.files())) ==0 ){
+# 
+#   system(paste("wget http://gdac.broadinstitute.org/runs/stddata__2016_01_28/data/", cohort_TCGA, "/20160128/gdac.broadinstitute.org_", cohort_TCGA,".Merge_Clinical.Level_1.2016012800.0.0.tar.gz", sep=""))
+#   system(paste("tar -zxvf gdac.broadinstitute.org_", cohort_TCGA,".Merge_Clinical.Level_1.2016012800.0.0.tar.gz", sep=""))
+#   system(paste("rm gdac.broadinstitute.org_", cohort_TCGA,".Merge_Clinical.Level_1.2016012800.0.0.tar.gz", sep=""))
+# 
+# }
 
 
 # read data
-Expression_table <- read.delim(paste("gdac.broadinstitute.org_", cohort_TCGA,".Merge_rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes__data.Level_3.2016012800.0.0/", cohort_TCGA,".rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes__data.data.txt", sep=""), na.strings = c("null", "", " ", "NA", "na"))
+Expression_table <- read.delim(paste( cohort_TCGA,"/", cohort_TCGA,".txt", sep=""), na.strings = c("null", "", " ", "NA", "na"))
 
 Expression_table_2 <- Expression_table[-c(1:30),c(1,grep("raw_count", as.character(unlist(Expression_table[1, ]))))]
 Expression_table_2$Hybridization.REF = sapply(strsplit(as.character(Expression_table_2$Hybridization.REF),"[[:punct:]]"), `[`, 1)
@@ -146,13 +148,23 @@ dev.off()
 Voom_table <- merge(as.data.frame(t(voom.analysis$E)), Table_final_results[,20282:20285], by=0)
 rownames(Voom_table) <- Voom_table[,1]
 Voom_table = Voom_table[,-1]
+## Dont re run voom as i have the object saved in file
 
+load("C:\LispHome\PanCancer_CentrosomeAmplification\Breast_cancer\VoomTable.RData")
 # chose CA20 genes
 CA_20_genes <- c("AURKA", "CCNA2", "CCND1", "CCNE2", "CDK1", "CEP63", "CEP152", 'E2F1', "E2F2", "LMO4", "MDM2", "MYCN", "NDRG1", 'NEK2', "PIN1", "PLK1", 'PLK4', 'SASS6', "STIL", "TUBG1")
 
 Voom_table_CA20 <- Voom_table[,names(Voom_table) %in% c(CA_20_genes, names(Voom_table)[20282:20285])]
 
 saveRDS(Voom_table_CA20, "CA20_expression_table_reads_TCGA.rds")
+
+CJ_30_genes  = c("CLDN1","CLDN3", "CLDN4", "CLDN7", "OCLN", "TJP1", "F11R", "CGN", "CXADR", "MARVELD3","CRB3", "PARD3", "SCRIB", "SFN", 
+        "CDH1","CTNNB1", "CTNNA1", "JUP", "DSG2", "DSG3", "GJA1","PECAM1", "EPCAM","NCAM1", "ICAM1","VCAM1", "SELE", "ITGB3", "ITGB1", "ITGAV", "DSC3" )
+
+
+Voom_table_CJ30 <- Voom_table[,names(Voom_table) %in% c(CJ_30_genes, names(Voom_table)[20282:20285])]
+
+saveRDS(Voom_table_CJ30, "CJ30_expression_table_reads_TCGA.rds")
 
 ```
 
@@ -171,6 +183,7 @@ rownames(Final_expression_table) <- Final_expression_table[,1]
 Final_expression_table = Final_expression_table[,-1]
 
 write.table(Final_expression_table, "CA20_expression_table_TCGA_CA20allCohorts.txt", row.names = T, quote=F, sep="\t")
+Final_expression_table <- read.delim("CA20_expression_table_TCGA_CA20allCohorts.txt")
 
 ```
 

@@ -1,0 +1,16 @@
+base
+BiocGenerics
+Biobase
+rJava
+rcdklibs
+rcdk
+fingerprint
+rcellminerData
+rcellminer
+corrplot
+kableExtra
+magrittr
+BiocInstaller
+TCGAbiolinks
+knitr
+dplyr

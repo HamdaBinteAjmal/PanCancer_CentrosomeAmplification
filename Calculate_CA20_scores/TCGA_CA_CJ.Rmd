@@ -1,0 +1,714 @@
+---
+title: "TCGA CA20-CJ30 Analysis"
+author: "Hamda Binte Ajmal"
+date: "3 May 2019"
+output:
+  slidy_presentation: default
+  ioslides_presentation: default
+  beamer_presentation: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(cache = TRUE)
+knitr::opts_chunk$set(tidy = TRUE)
+
+library(rcellminer)
+library(corrplot)
+
+library(kableExtra)
+library(magrittr)
+source("http://www.bioconductor.org/biocLite.R")
+library(TCGAbiolinks)
+```
+
+```{r loadData}
+
+Voom_table_CA20 <- readRDS("CA20_expression_table_reads_TCGA.rds")
+Voom_table_CJ30 <- readRDS("CJ30_expression_table_reads_TCGA.rds")
+
+Final_expression_table <- read.delim("CA20_expression_table_TCGA_CA20allCohorts.txt")
+CJ_30_genes  = c("CLDN1","CLDN3", "CLDN4", "CLDN7", "OCLN", "TJP1", "F11R", "CGN", "CXADR", "MARVELD3","CRB3", "PARD3", "SCRIB", "SFN", 
+        "CDH1","CTNNB1", "CTNNA1", "JUP", "DSG2", "DSG3", "GJA1","PECAM1", "EPCAM","NCAM1", "ICAM1","VCAM1", "SELE", "ITGB3", "ITGB1", "ITGAV" , "DSC3")
+
+
+```
+## Contents
+* TCGA Pan Cancer: Cross Correlation between CA and CJ Genes
+* TCGA Pan Cancer: Cross Correlation b/w CAScore and CJ genes
+* TCGA Pan Cancer: Cross Correlation table
+* TCGA Breast Cancer: Cross Correlation between CA and CJ Genes
+* TCGA Breast Cancer: Cross Correlation b/w CAScore and CJ genes
+* TCGA Breast Cancer: Cross Correlation table
+* TCGA Breast Cancer: DE analysis
+* TCGA Luminal A BC: Cross Correlation between CA and CJ Genes
+* TCGA Luminal A BC: Cross Correlation b/w CAScore and CJ genes
+* TCGA Luminal A BC: Cross Correlation table
+* TCGA Luminal A BC: DE analysis
+* TCGA Luminal B BC: Cross Correlation between CA and CJ Genes
+* TCGA Luminal B BC: Cross Correlation b/w CAScore and CJ genes
+* TCGA Luminal B BC: Cross Correlation table
+* TCGA Luminal B BC: DE analysis
+* TCGA Basal BC: Cross Correlation between CA and CJ Genes
+* TCGA Basal BC: Cross Correlation b/w CAScore and CJ genes
+* TCGA Basal BC: Cross Correlation table
+* TCGA Basal BC: DE analysis
+* TCGA Her2 BC: Cross Correlation between CA and CJ Genes
+* TCGA Her2 BC: Cross Correlation b/w CAScore and CJ genes
+* TCGA Her2 BC: Cross Correlation table
+* TCGA Her2 BC: DE analysis
+
+## Pan Cancer Cross Correlation b/w CA and CJ genes
+- Correlation betweenCA20 gene expression and CJ30 Gene expression
+```{r crossCor}
+cr <- crossCors(t(Voom_table_CA20[,1:20]),t(Voom_table_CJ30[,1:31]))
+corrplot(cr$cor, cl.lim = c(-1,1), p.mat = cr$pval, sig.level = 0.1, insig =  "blank",  tl.col = "black", tl.srt = 90, type = "full", mar = c(2, 2, 1, 0))
+mtext(text = "CJ30 Panel", side = 3, at=15, line=2, cex=1.25, las =1 )
+mtext(text = "CA20 Panel", side = 2, line = 1.5, at = 12 , cex = 1.25)
+df <- cbind(Voom_table_CJ30[,1:length(CJ_30_genes)], Final_expression_table$CA20)
+#fit <- lm(Final_expression_table$CA20 ~ ., df)
+  
+```
+
+## Pan Cancer Cross Correlation b/w CAScore and CJ genes
+- between CA20 Score and expression of each gene in CJ30 across all cancer cohorts
+```{r crossCorCAScore}
+
+Final_expression_table <- read.delim("CA20_expression_table_TCGA_CA20allCohorts.txt")
+CA20Score <- Final_expression_table$CA20
+
+cr <- crossCors(CA20Score,t(Voom_table_CJ30[,1:31]))
+dimnames(cr$cor)[[1]] = "CA20 Score"
+dimnames(cr$pval)[[1]] = "CA20 Score"
+rownames(cr$cor) = c("CA20 Score")
+rownames(cr$pval) = c("CA20 Score")
+corrplot(cr$cor, cl.lim = c(-1,1), p.mat = cr$pval, sig.level = 0.05, insig =  "blank",  tl.col = "black", tl.srt = 90, type = "full", cl.pos = "n",mar = c(2, 1, 1, 1), xaxs="i", yaxs="i")
+mtext(text = "CJ30 Panel", side = 3, at=15, line=-5, cex=1.25, las =1 )
+#mtext(text = "CA20 Score", side = 2, line = 6.5, at = 12 , cex = 1.25)
+
+
+
+
+```
+
+
+## Pan Cancer Cross Correlation table (CAScore - CJ Genes)
+Genes are listed in decreasing order of their correlation with CA20 Score. 
+
+```{r table1}
+library(knitr)
+library(kableExtra)
+cr_tab <- as.data.frame(t(do.call(rbind, cr)))
+colnames(cr_tab) <- c("Cor", "P-val")
+
+cr_pos <- cr_tab[which(cr_tab$Cor>0), ]
+cr_neg <- cr_tab[which(cr_tab$Cor<0), ]
+cr_pos <- cr_pos[order(cr_pos$Cor, decreasing = TRUE), ]
+cr_neg <- cr_neg[order(cr_neg$Cor, decreasing = FALSE), ]
+
+colnames(cr_pos) <- c("Positive Correlation", "P-Value")
+colnames(cr_neg) <- c("Negative Correlation", "P-Value")
+kable(list(cr_pos, cr_neg),caption = c(""), format = "html", booktabs = TRUE, digits = 3 ) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed"), font_size = 14, full_width = F) 
+
+
+
+```
+
+
+## R Breast Cancer Cohort - Cross Correlation b/w CA-CJ genes
+The previous slides show correlation between gene expression of all cancer types and CA20 score, now we extract only the breast cancer tumours. There are 1212 breast cancer samples in TCGA that includes 113 normal samples.
+```{R BC}
+Voom_table_CA20_bc <- Voom_table_CA20[which(Voom_table_CA20$Cohort == "BRCA" ),]
+Voom_table_CJ30_bc <- Voom_table_CJ30[which(Voom_table_CJ30$Cohort == "BRCA" ),]
+cr <- crossCors(t(Voom_table_CA20_bc[,1:20]),t(Voom_table_CJ30_bc[,1:length(CJ_30_genes)]))
+
+#corrplot(cr$cor, cl.lim = c(-1,1), p.mat = cr$pval, sig.level = 0.1, insig =  #"blank",  tl.col = "black", tl.srt = 45, type = "full")
+corrplot(cr$cor, cl.lim = c(-1,1), p.mat = cr$pval, sig.level = 0.1, insig =  "blank",  tl.col = "black", tl.srt = 90, type = "full", mar = c(2, 2, 1, 0))
+mtext(text = "CJ30 Panel", side = 3, at=15, line=2, cex=1.25, las =1 )
+mtext(text = "CA20 Panel", side = 2, line = 1.5, at = 12 , cex = 1.25)
+ 
+
+```
+
+## R Breast Cancer Cohort - Cross Correlation b/w CA20Score-CJ genes
+- Correlation of expression of CJ30 genes with CA20Score in breast cancer cohort.
+```{r crossCorCAScoreBC}
+
+Final_expression_table <- read.delim("CA20_expression_table_TCGA_CA20allCohorts.txt")
+CA20Score_bc <- Final_expression_table[which(Final_expression_table$Cohort == "BRCA"),"CA20"]
+Voom_table_CJ30_bc <- Voom_table_CJ30[which(Voom_table_CJ30$Cohort == "BRCA"),]
+cr <- crossCors(CA20Score_bc,t(Voom_table_CJ30_bc[,1:length(CJ_30_genes)]))
+dimnames(cr$cor)[[1]] = "CA20 Score"
+dimnames(cr$pval)[[1]] = "CA20 Score"
+rownames(cr$cor) = c("CA20 Score")
+rownames(cr$pval) = c("CA20 Score")
+#corrplot(cr$cor, cl.lim = c(-1,1), p.mat = cr$pval, sig.level = 0.05, insig =  #"blank",  tl.col = "black", tl.srt = 45, type = "full")
+corrplot(cr$cor, cl.lim = c(-1,1), p.mat = cr$pval, sig.level = 0.05, insig =  "blank",  tl.col = "black", tl.srt = 90, type = "full", cl.pos = "n",mar = c(2, 1, 1, 1), xaxs="i", yaxs="i")
+mtext(text = "CJ30 Panel", side = 3, at=15, line=-5, cex=1.25, las =1 )
+
+
+
+```
+
+## R Breast Cancer Cohort - Cross Correlation table (CA20Score-CJ genes)
+- CJ30 gene expression with CA20 Score
+```{r table}
+library(knitr)
+library(kableExtra)
+cr_tab <- as.data.frame(t(do.call(rbind, cr)))
+colnames(cr_tab) <- c("Cor", "P-val")
+
+cr_pos <- cr_tab[which(cr_tab$Cor>0), ]
+cr_neg <- cr_tab[which(cr_tab$Cor<0), ]
+cr_pos <- cr_pos[order(cr_pos$Cor, decreasing = TRUE), ]
+cr_neg <- cr_neg[order(cr_neg$Cor, decreasing = FALSE), ]
+
+colnames(cr_pos) <- c("Positive Correlation", "P-Value")
+colnames(cr_neg) <- c("Negative Correlation", "P-Value")
+kable(list(cr_pos, cr_neg),caption = c(""), format = "html", booktabs = TRUE, digits = 3 ) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed"), font_size = 14, full_width = F)  
+
+
+```
+## DE analysys of all BRCA tumor and normal samples
+- 1095 tumour samples and 113 normal samples. The results could be biased because of a big difference in number of samples. 
+
+```{r DE_allBRCA}
+
+# query <- GDCquery(project = "TCGA-BRCA",
+#                            data.category = "Gene expression",
+#                            data.type = "Gene expression quantification",
+#                            platform = "Illumina HiSeq",
+#                            file.type  = "normalized_results",
+#                            experimental.strategy = "RNA-Seq",
+#                            legacy = TRUE)
+
+#GDCdownload(query, method = "api", files.per.chunk = 200)
+# BRCA <- GDCprepare(query = query,
+#                           save = TRUE,
+#                           summarizedExperiment = TRUE,
+#                           save.filename = "BRCA.rda")
+BRCA <- get(load("BRCA.rda"))
+dataNorm <- TCGAbiolinks::TCGAanalyze_Normalization(BRCA, geneInfo)
+samplesNT <- TCGAquery_SampleTypes(colnames(dataNorm), typesample = c("NT"))
+samplesTP <- TCGAquery_SampleTypes(colnames(dataNorm), typesample = c("TP"))
+matchedTP <- samplesTP[which(substr(samplesTP,1,13) %in% substr(samplesNT,1,13))]
+
+dE <- TCGAbiolinks::TCGAanalyze_DEA(mat1  = dataNorm[,samplesTP],
+                                    mat2  = dataNorm[,samplesNT],
+                                    Cond1type = "Tumor", Cond2type = "Normal",
+                                    method = "glmLRT",
+                                    fdr.cut = 0.01,
+                                    logFC.cut = 1.5)
+dataDEGsFiltLevel <- TCGAanalyze_LevelTab(dE,"Tumor","Normal",
+                                dataNorm[,samplesTP],dataNorm[,samplesNT])
+dE_CJ <- dataDEGsFiltLevel[which(rownames(dataDEGsFiltLevel) %in% CJ_30_genes),]
+dE_CJ <- dE_CJ[order(abs(dE_CJ$logFC), decreasing = TRUE),]
+print(dE_CJ)
+
+kable(dE_CJ,caption = c("DE analysis"), format = "html", booktabs = TRUE, digits = 3 ) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed"), fixed_thead = T, font_size = 10, full_width = F)
+
+## matched only ##
+dE <- TCGAbiolinks::TCGAanalyze_DEA(mat1  = dataNorm[,matchedTP],
+                                    mat2  = dataNorm[,samplesNT],
+                                    Cond1type = "Tumor", Cond2type = "Normal",
+                                    method = "glmLRT",
+                                    fdr.cut = 0.01,
+                                    logFC.cut = 1.5)
+dataDEGsFiltLevel <- TCGAanalyze_LevelTab(dE,"Tumour","Normal",
+                                dataNorm[,matchedTP], dataNorm[,samplesNT])
+dE_CJ <- dataDEGsFiltLevel[which(rownames(dataDEGsFiltLevel) %in% CJ_30_genes),]
+dE_CJ <- dE_CJ[order(abs(dE_CJ$logFC), decreasing = TRUE),]
+print(dE_CJ)
+
+kable(dE_CJ,caption = c("DE analysis"), format = "html", booktabs = TRUE, digits = 3 ) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed"), fixed_thead = T, font_size = 10, full_width = F)
+
+
+```
+<!-- ## CJ30-CA20 in Breast Cancer Tumour - 1100 primary solid tumor samples -->
+<!-- ```{r BRCA} -->
+
+<!-- Voom_table_CA20_bc_tumor <- subset(Voom_table_CA20, sample_type == "Tumor" & Cohort == "BRCA" & sample_type_detail == "Primary Solid Tumor") -->
+<!-- Voom_table_CJ30_bc_tumor <- subset(Voom_table_CJ30, Cohort == "BRCA" & sample_type == "Tumor"  & sample_type_detail == "Primary Solid Tumor") -->
+<!-- cr <- crossCors(t(Voom_table_CA20_bc_tumor[,1:20]),t(Voom_table_CJ30_bc_tumor[,1:30])) -->
+
+<!-- corrplot(cr$cor, cl.lim = c(-1,1), p.mat = cr$pval, sig.level = 0.1, insig =  "blank",  tl.col = "black", tl.srt = 45, type = "full")   -->
+
+<!-- ``` -->
+
+<!-- ## CJ30 - CA20 Score in Breast Cancer Tumor Samples - 1100 tumor samples -->
+<!-- ```{r BRCA_Tumour_CA20Score} -->
+<!-- CA20Score_bc_tumor <- subset(Final_expression_table, Cohort == "BRCA" & sample_type == "Tumor" &  sample_type_detail == "Primary Solid Tumor") -->
+<!-- #CA20Score_bc_tumor <- CA20Score_bc_tumor$CA20 -->
+
+<!-- cr <- crossCors(CA20Score_bc_tumor$CA20,t(Voom_table_CJ30_bc_tumor[,1:30])) -->
+<!-- dimnames(cr$cor)[[1]] = "CA20 Score" -->
+<!-- dimnames(cr$pval)[[1]] = "CA20 Score" -->
+<!-- rownames(cr$cor) = c("CA20Score") -->
+<!-- rownames(cr$pval) = c("CA20Score") -->
+<!-- corrplot(cr$cor, cl.lim = c(-1,1), p.mat = cr$pval, sig.level = 0.05, insig =  "blank",  tl.col = "black", tl.srt = 45, type = "full") -->
+
+<!-- ``` -->
+
+
+## Subtypes Lum A - 625 samples (564 tumour, 61 normal) Cross Correlation
+-In luminal A cancer subtypes, 230 out of 564 tumour samples have a higher CA20Score while 60 out of 61 Normal samples have a lower CA20Score. 
+```{r subtypes}
+
+cancer <- "BRCA"
+dataSubt <- TCGAquery_subtype(tumor = cancer)
+lumA <- subset(dataSubt, BRCA_Subtype_PAM50 == "LumA")# luminal samples found
+lumA$patient <- unlist(lapply(lumA$patient, function(x) gsub(x, pattern = "-", replacement = ".")))
+CA20Score_lumA <- Final_expression_table[which(substr(Final_expression_table$Sample,1,12) %in%  lumA$patient),]
+CJ30Score_lumA <- Voom_table_CJ30[which(substr(Final_expression_table$Sample,1,12) %in%  lumA$patient),]
+
+cr <- crossCors(t(CA20Score_lumA[,1:20]),t(CJ30Score_lumA[,1:length(CJ_30_genes)]))
+
+#corrplot(cr$cor, cl.lim = c(-1,1), p.mat = cr$pval, sig.level = 0.1, insig =  #"blank",  tl.col = "black", tl.srt = 45, type = "full") 
+corrplot(cr$cor, cl.lim = c(-1,1), p.mat = cr$pval, sig.level = 0.1, insig =  "blank",  tl.col = "black", tl.srt = 90, type = "full", mar = c(2, 2, 1, 0))
+mtext(text = "CJ30 Panel", side = 3, at=15, line=2, cex=1.25, las =1 )
+mtext(text = "CA20 Panel", side = 2, line = 1.5, at = 12 , cex = 1.25)
+
+counts <- with(CA20Score_lumA, table( sample_type, CA20_group_all_samples))
+#counts <- counts[c("Primary Solid Tumor","Solid Tissue Normal" ),]
+print(counts)
+```
+
+## Subtypes Lum A - 625 Samples - Correlation with CA Score
+```{r lumA-CA20Score}
+cr <- crossCors(t(CA20Score_lumA$CA20),t(CJ30Score_lumA[,1:length(CJ_30_genes)]))
+dimnames(cr$cor)[[1]] = "CA20 Score"
+dimnames(cr$pval)[[1]] = "CA20 Score"
+rownames(cr$cor) = c("CA20 Score")
+rownames(cr$pval) = c("CA20 Score")
+#corrplot(cr$cor, cl.lim = c(-1,1), p.mat = cr$pval, sig.level = 0.1, insig =  #"blank",  tl.col = "black", tl.srt = 45, type = "full")  
+
+corrplot(cr$cor, cl.lim = c(-1,1), p.mat = cr$pval, sig.level = 0.05, insig =  "blank",  tl.col = "black", tl.srt = 90, type = "full", cl.pos = "n",mar = c(2, 1, 1, 1), xaxs="i", yaxs="i")
+mtext(text = "CJ30 Panel", side = 3, at=15, line=-5, cex=1.25, las =1 )
+
+```
+
+##  Subtypes Lum A Correlation Table (CA20Score - CJGenes)
+- CJ30 gene expression with CA20 Score of LumA breast cancer patients
+```{r table3}
+library(knitr)
+library(kableExtra)
+cr_tab <- as.data.frame(t(do.call(rbind, cr)))
+colnames(cr_tab) <- c("Cor", "P-val")
+
+cr_pos <- cr_tab[which(cr_tab$Cor>0), ]
+cr_neg <- cr_tab[which(cr_tab$Cor<0), ]
+cr_pos <- cr_pos[order(cr_pos$Cor, decreasing = TRUE), ]
+cr_neg <- cr_neg[order(cr_neg$Cor, decreasing = FALSE), ]
+
+colnames(cr_pos) <- c("Positive Correlation", "P-Value")
+colnames(cr_neg) <- c("Negative Correlation", "P-Value")
+kable(list(cr_pos, cr_neg),caption = c(""), format = "html", booktabs = TRUE, digits = 3 ) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed"), font_size = 14, full_width = F) 
+
+
+```
+
+## De analysis of only lum A patients Tumor and normals 
+- Now doing DE analyis for lumA breast cancer patients and their matched normals. Due to uneven sample sizes in both groups, the results can be biased. 
+```{r LumA_DE_Analysis}
+dataSubt <- TCGAquery_subtype(tumor = "BRCA")
+lumA <- subset(dataSubt,  BRCA_Subtype_PAM50 == "LumA" )
+lumA_names <- lumA$patient
+samplesNT <- TCGAquery_SampleTypes(colnames(dataNorm), typesample = c("NT"))
+samplesTP <- TCGAquery_SampleTypes(colnames(dataNorm), typesample = c("TP"))
+
+samplesTP_lumA <- samplesTP[which(substr(samplesTP,1,12)%in% lumA_names)]
+samplesNT_lumA <- samplesNT[which(substr(samplesNT,1,12) %in% lumA_names)]
+samplesMatchedTP_lumA <- matchedTP <- samplesTP_lumA[which(substr(samplesTP_lumA,1,13) %in% substr(samplesNT_lumA,1,13))]
+
+dE <- TCGAbiolinks::TCGAanalyze_DEA(mat1  = dataNorm[,samplesTP_lumA],
+                                    mat2  = dataNorm[,samplesNT_lumA],
+                                    Cond1type = "LumATumour", Cond2type = "LumANormal",
+                                    method = "glmLRT",
+                                    fdr.cut = 0.01,
+                                    logFC.cut = 1)
+dataDEGsFiltLevel <- TCGAanalyze_LevelTab(dE,"LumA","LumANormal",
+                                dataNorm[,samplesTP_lumA],dataNorm[,samplesNT_lumA])
+dE_CJ <- dataDEGsFiltLevel[which(rownames(dataDEGsFiltLevel) %in% CJ_30_genes),]
+dE_CJ <- dE_CJ[order(abs(dE_CJ$logFC), decreasing = TRUE),]
+kable(dE_CJ,caption = c("DE analysis"), format = "html", booktabs = TRUE, digits = 3 ) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed"), fixed_thead = T, font_size = 10, full_width = F) 
+## matched
+
+dE <- TCGAbiolinks::TCGAanalyze_DEA(mat1  = dataNorm[,samplesMatchedTP_lumA],
+                                    mat2  = dataNorm[,samplesNT_lumA],
+                                    Cond1type = "LumATumour", Cond2type = "LumANormal",
+                                    method = "glmLRT",
+                                    fdr.cut = 0.01,
+                                    logFC.cut = 1)
+dataDEGsFiltLevel <- TCGAanalyze_LevelTab(dE,"LumA","LumANormal",
+                                dataNorm[,samplesTP_lumA],dataNorm[,samplesNT_lumA])
+dE_CJ <- dataDEGsFiltLevel[which(rownames(dataDEGsFiltLevel) %in% CJ_30_genes),]
+dE_CJ <- dE_CJ[order(abs(dE_CJ$logFC), decreasing = TRUE),]
+kable(dE_CJ,caption = c("DE analysis"), format = "html", booktabs = TRUE, digits = 3 ) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed"), fixed_thead = T, font_size = 10, full_width = F) 
+
+```
+
+## Subtypes Lum B - 233 samples only (211 tumor, 22 normal) Cross Correlation
+-In luminal B cancer subtypes, 207 out of 211 tumour samples have a higher CA20Score while all 22 Normal samples have a lower CA20Score. 
+```{r subtypesLumB}
+cancer <- "BRCA"
+dataSubt <- TCGAquery_subtype(tumor = cancer)
+lumB <- subset(dataSubt, BRCA_Subtype_PAM50 == "LumB")# luminal samples found
+lumB$patient <- unlist(lapply(lumB$patient, function(x) gsub(x, pattern = "-", replacement = ".")))
+
+CA20Score_lumB <- Final_expression_table[which(substr(Final_expression_table$Sample,1,12) %in%  lumB$patient),]
+CJ30_lumB <- Voom_table_CJ30[which(substr(Final_expression_table$Sample,1,12) %in%  lumB$patient),]
+
+cr <- crossCors(t(CA20Score_lumB[,1:20]),t(CJ30_lumB[,1:31]))
+
+#corrplot(cr$cor, cl.lim = c(-1,1), p.mat = cr$pval, sig.level = 0.1, insig =  #"blank",  tl.col = "black", tl.srt = 45, type = "full") 
+corrplot(cr$cor, cl.lim = c(-1,1), p.mat = cr$pval, sig.level = 0.1, insig =  "blank",  tl.col = "black", tl.srt = 90, type = "full", mar = c(2, 2, 1, 0))
+mtext(text = "CJ30 Panel", side = 3, at=15, line=2, cex=1.25, las =1 )
+mtext(text = "CA20 Panel", side = 2, line = 1.5, at = 12 , cex = 1.25)
+
+library(dplyr)
+
+counts <- with(CA20Score_lumB, table( sample_type, CA20_group_all_samples))
+#counts <- counts[c("Primary Solid Tumor","Solid Tissue Normal" ),]
+print(counts)
+```
+
+## Subtype Lum B - 233 Samples - Correlation with CA Score
+```{r lumB-CA20Score}
+cr <- crossCors(t(CA20Score_lumB$CA20),t(CJ30_lumB[,1:31]))
+dimnames(cr$cor)[[1]] = "CA20 Score"
+dimnames(cr$pval)[[1]] = "CA20 Score"
+rownames(cr$cor) = c("CA20 Score")
+rownames(cr$pval) = c("CA20 Score")
+#corrplot(cr$cor, cl.lim = c(-1,1), p.mat = cr$pval, sig.level = 0.1, insig =  #"blank",  tl.col = "black", tl.srt = 45, type = "full")  
+corrplot(cr$cor, cl.lim = c(-1,1), p.mat = cr$pval, sig.level = 0.05, insig =  "blank",  tl.col = "black", tl.srt = 90, type = "full", cl.pos = "n",mar = c(2, 1, 1, 1), xaxs="i", yaxs="i")
+mtext(text = "CJ30 Panel", side = 3, at=15, line=-5, cex=1.25, las =1 )
+
+```
+
+##  Subtype Lum B Correlation Table (CA20 Score to CJ Genes)
+- CJ30 gene expression with CA20 Score of LuminalB cancer patients.
+```{r tableLumB}
+library(knitr)
+library(kableExtra)
+cr_tab <- as.data.frame(t(do.call(rbind, cr)))
+colnames(cr_tab) <- c("Cor", "P-val")
+
+cr_pos <- cr_tab[which(cr_tab$Cor>0), ]
+cr_neg <- cr_tab[which(cr_tab$Cor<0), ]
+cr_pos <- cr_pos[order(cr_pos$Cor, decreasing = TRUE), ]
+cr_neg <- cr_neg[order(cr_neg$Cor, decreasing = FALSE), ]
+
+colnames(cr_pos) <- c("Positive Correlation", "P-Value")
+colnames(cr_neg) <- c("Negative Correlation", "P-Value")
+kable(list(cr_pos, cr_neg),caption = c(""), format = "html", booktabs = TRUE, digits = 3 ) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed"), font_size = 14, full_width = F) 
+
+
+```
+
+## DE analysis of only lum B patients and matched normals
+```{r LumB_DE_Analysis}
+dataSubt <- TCGAquery_subtype(tumor = cancer)
+lumB <- subset(dataSubt,  BRCA_Subtype_PAM50 == "LumB" )
+lumB_names <- lumB$patient
+
+samplesTP_lumB <- samplesTP[which(substr(samplesTP,1,12)%in% lumB_names)]
+samplesNT_lumB <- samplesNT[which(substr(samplesNT,1,12)%in% lumB_names)]
+samplesMatchedTP_lumB <- samplesTP_lumB[which(substr(samplesTP_lumB,1,12)%in% substr(samplesNT_lumB,1, 12))]
+dE <- TCGAbiolinks::TCGAanalyze_DEA(mat1  = dataNorm[,samplesTP_lumB],
+                                    mat2  = dataNorm[,samplesNT_lumB],
+                                    Cond1type = "LumB-Tumor", Cond2type ="LumB-Normal",
+                                    method = "glmLRT",
+                                    fdr.cut = 0.01,
+                                    logFC.cut = 1.5)
+dataDEGsFiltLevel <- TCGAanalyze_LevelTab(dE,"LumB-Tumor","LumB-Normal",
+                                dataNorm[,samplesTP_lumB],dataNorm[,samplesNT_lumB])
+dE_CJ <- dataDEGsFiltLevel[which(rownames(dataDEGsFiltLevel) %in% CJ_30_genes),]
+dE_CJ <- dE_CJ[order(abs(dE_CJ$logFC), decreasing = TRUE),]
+kable(dE_CJ,caption = c("DE analysis"), format = "html", booktabs = TRUE, digits = 3 ) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed"), fixed_thead = T, font_size = 10, full_width = F)
+#matched
+dE <- TCGAbiolinks::TCGAanalyze_DEA(mat1  = dataNorm[,samplesMatchedTP_lumB],
+                                    mat2  = dataNorm[,samplesNT_lumB],
+                                    Cond1type = "LumB-Tumor", Cond2type ="LumB-Normal",
+                                    method = "glmLRT",
+                                    fdr.cut = 0.01,
+                                    logFC.cut = 1.5)
+dataDEGsFiltLevel <- TCGAanalyze_LevelTab(dE,"LumB-Tumor","LumB-Normal",
+                                dataNorm[,samplesMatchedTP_lumB],dataNorm[,samplesNT_lumB])
+dE_CJ <- dataDEGsFiltLevel[which(rownames(dataDEGsFiltLevel) %in% CJ_30_genes),]
+dE_CJ <- dE_CJ[order(abs(dE_CJ$logFC), decreasing = TRUE),]
+kable(dE_CJ,caption = c("DE analysis"), format = "html", booktabs = TRUE, digits = 3 ) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed"), fixed_thead = T, font_size = 10, full_width = F) 
+
+
+```
+
+## Subtype Basal - 208 samples, 191 Tumour and 17 Normal samples Cross Correlation
+In Basal samples, 188 out of 191 samples have a higher CA20Score while all 17 normal samples have a  lower CA20Score.
+```{r subtypesBasal}
+cancer <- "BRCA"
+dataSubt <- TCGAquery_subtype(tumor = cancer)
+basal <- subset(dataSubt, BRCA_Subtype_PAM50 == "Basal")# luminal samples found
+basal$patient <- unlist(lapply(basal$patient, function(x) gsub(x, pattern = "-", replacement = ".")))
+
+CA20Score_basal <- Final_expression_table[which(substr(Final_expression_table$Sample,1,12) %in%  basal$patient),]
+CJ30_basal <- Voom_table_CJ30[which(substr(Voom_table_CJ30$Sample,1,12) %in%  basal$patient),]
+
+cr <- crossCors(t(CA20Score_basal[,1:20]),t(CJ30_basal[,1:31]))
+
+#corrplot(cr$cor, cl.lim = c(-1,1), p.mat = cr$pval, sig.level = 0.1, insig =  #"blank",  tl.col = "black", tl.srt = 45, type = "full")  
+corrplot(cr$cor, cl.lim = c(-1,1), p.mat = cr$pval, sig.level = 0.1, insig =  "blank",  tl.col = "black", tl.srt = 90, type = "full", mar = c(2, 2, 1, 0))
+mtext(text = "CJ30 Panel", side = 3, at=15, line=2, cex=1.25, las =1 )
+mtext(text = "CA20 Panel", side = 2, line = 1.5, at = 12 , cex = 1.25)
+
+counts <- with(CA20Score_basal, table( sample_type, CA20_group_all_samples))
+#counts <- counts[c("Primary Solid Tumor","Solid Tissue Normal" ),]
+print(counts)
+```
+
+## Subtype Basal - 208 samples- Correlation with CA Score
+```{r Basal-CA20Score}
+cr <- crossCors(t(CA20Score_basal$CA20),t(CJ30_basal[,1:31]))
+dimnames(cr$cor)[[1]] = "CA20 Score"
+dimnames(cr$pval)[[1]] = "CA20 Score"
+rownames(cr$cor) = c("CA20 Score")
+rownames(cr$pval) = c("CA20 Score")
+#corrplot(cr$cor, cl.lim = c(-1,1), p.mat = cr$pval, sig.level = 0.1, insig =  #"blank",  tl.col = "black", tl.srt = 45, type = "full")  
+
+corrplot(cr$cor, cl.lim = c(-1,1), p.mat = cr$pval, sig.level = 0.05, insig =  "blank",  tl.col = "black", tl.srt = 90, type = "full", cl.pos = "n",mar = c(2, 1, 1, 1), xaxs="i", yaxs="i")
+mtext(text = "CJ30 Panel", side = 3, at=15, line=-5, cex=1.25, las =1 )
+
+```
+
+## Subtype Basal Correlation Table (CA20Score - CJ Genes)
+- CJ30 gene expression with CA20 Score for basal patient samples
+```{r tableBasal}
+library(knitr)
+library(kableExtra)
+cr_tab <- as.data.frame(t(do.call(rbind, cr)))
+colnames(cr_tab) <- c("Cor", "P-val")
+
+cr_pos <- cr_tab[which(cr_tab$Cor>0), ]
+cr_neg <- cr_tab[which(cr_tab$Cor<0), ]
+cr_pos <- cr_pos[order(cr_pos$Cor, decreasing = TRUE), ]
+cr_neg <- cr_neg[order(cr_neg$Cor, decreasing = FALSE), ]
+
+colnames(cr_pos) <- c("Positive Correlation", "P-Value")
+colnames(cr_neg) <- c("Negative Correlation", "P-Value")
+kable(list(cr_pos, cr_neg),caption = c(""), format = "html", booktabs = TRUE, digits = 3 ) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed"), font_size = 14, full_width = F) 
+
+
+```
+
+
+## De analysis of only Basal patients and matched normals
+```{r Basal_DE_Analysis}
+dataSubt <- TCGAquery_subtype(tumor = cancer)
+basal <- subset(dataSubt,  BRCA_Subtype_PAM50 == "Basal" )
+basal_names <- basal$patient
+
+samplesTP_basal <- samplesTP[which(substr(samplesTP,1,12)%in% basal_names)]
+samplesNT_basal <- samplesNT[which(substr(samplesNT,1,12)%in% basal_names)]
+samplesMatchedTP_basal <- samplesTP_lumB[which(substr(samplesTP_basal,1,12)%in% substr(samplesNT_basal,1, 12))]
+
+dE <- TCGAbiolinks::TCGAanalyze_DEA(mat1  = dataNorm[,samplesTP_basal],
+                                    mat2  = dataNorm[,samplesNT_basal],
+                                    Cond1type = "Basal-Tumor", Cond2type ="Basal-Normal", method = "glmLRT", fdr.cut = 0.01, logFC.cut = 1.5)
+dataDEGsFiltLevel <- TCGAanalyze_LevelTab(dE,"Basal-Tumor","Basal-Normal",
+                                dataNorm[,samplesTP_basal],dataNorm[,samplesNT_basal])
+dE_CJ <- dataDEGsFiltLevel[which(rownames(dataDEGsFiltLevel) %in% CJ_30_genes),]
+dE_CJ <- dE_CJ[order(abs(dE_CJ$logFC), decreasing = TRUE),]
+kable(dE_CJ,caption = c("DE analysis"), format = "html", booktabs = TRUE, digits = 3 ) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed"), fixed_thead = T, font_size = 10, full_width = F) 
+# matchied
+dE <- TCGAbiolinks::TCGAanalyze_DEA(mat1  = dataNorm[,samplesMatchedTP_basal],
+                                    mat2  = dataNorm[,samplesNT_basal],
+                                    Cond1type = "Basal-Tumor", Cond2type ="Basal-Normal", method = "glmLRT", fdr.cut = 0.01, logFC.cut = 1.5)
+dataDEGsFiltLevel <- TCGAanalyze_LevelTab(dE,"Basal-Tumor","Basal-Normal",
+                                dataNorm[,samplesMatchedTP_basal],dataNorm[,samplesNT_basal])
+dE_CJ <- dataDEGsFiltLevel[which(rownames(dataDEGsFiltLevel) %in% CJ_30_genes),]
+dE_CJ <- dE_CJ[order(abs(dE_CJ$logFC), decreasing = TRUE),]
+kable(dE_CJ,caption = c("DE analysis"), format = "html", booktabs = TRUE, digits = 3 ) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed"), fixed_thead = T, font_size = 10, full_width = F) 
+
+```
+
+## Subtypes Her2 - 91 samples, 82 tumor and 9 normal samples - Cross Correlation
+- In Her2 BRCA Subtype, all 9 normal samples have a lower CA20Score while 79 out of 82 tumour samples have a high CA20Score. 
+```{r subtypesHer2}
+cancer <- "BRCA"
+dataSubt <- TCGAquery_subtype(tumor = cancer)
+Her2 <- subset(dataSubt, BRCA_Subtype_PAM50 == "Her2")# luminal samples found
+Her2$patient <- unlist(lapply(Her2$patient, function(x) gsub(x, pattern = "-", replacement = ".")))
+
+CA20Score_Her2 <- Final_expression_table[which(substr(Final_expression_table$Sample,1,12) %in%  Her2$patient),]
+CJ30_Her2 <- Voom_table_CJ30[which(substr(Voom_table_CJ30$Sample,1,12) %in%  Her2$patient),]
+
+cr <- crossCors(t(CA20Score_Her2[,1:20]),t(CJ30_Her2[,1:31]))
+
+#corrplot(cr$cor, cl.lim = c(-1,1), p.mat = cr$pval, sig.level = 0.1, insig =  #"blank",  tl.col = "black", tl.srt = 45, type = "full")  
+corrplot(cr$cor, cl.lim = c(-1,1), p.mat = cr$pval, sig.level = 0.1, insig =  "blank",  tl.col = "black", tl.srt = 90, type = "full", mar = c(2, 2, 1, 0))
+mtext(text = "CJ30 Panel", side = 3, at=15, line=2, cex=1.25, las =1 )
+mtext(text = "CA20 Panel", side = 2, line = 1.5, at = 12 , cex = 1.25)
+
+counts <- with(CA20Score_Her2, table( sample_type, CA20_group_all_samples))
+#counts <- counts[c("Primary Solid Tumor","Solid Tissue Normal" ),]
+print(counts)
+```
+
+## Subtypes Her2 - 82 Samples - Correlation with CA Score
+```{r Her2-CA20Score}
+cr <- crossCors(t(CA20Score_Her2$CA20),t(CJ30_Her2[,1:31]))
+dimnames(cr$cor)[[1]] = "CA20 Score"
+dimnames(cr$pval)[[1]] = "CA20 Score"
+rownames(cr$cor) = c("CA20 Score")
+rownames(cr$pval) = c("CA20S Score")
+#corrplot(cr$cor, cl.lim = c(-1,1), p.mat = cr$pval, sig.level = 0.1, insig =  #"blank",  tl.col = "black", tl.srt = 45, type = "full") 
+corrplot(cr$cor, cl.lim = c(-1,1), p.mat = cr$pval, sig.level = 0.05, insig =  "blank",  tl.col = "black", tl.srt = 90, type = "full", cl.pos = "n",mar = c(2, 1, 1, 1), xaxs="i", yaxs="i")
+mtext(text = "CJ30 Panel", side = 3, at=15, line=-5, cex=1.25, las =1 )
+
+```
+
+##  Subtype Her2 Correlation Table (CA20Score - CJGenes)
+- CJ30 gene expression with CA20 Score of HER2 subtype
+```{r table5}
+library(knitr)
+library(kableExtra)
+cr_tab <- as.data.frame(t(do.call(rbind, cr)))
+colnames(cr_tab) <- c("Cor", "P-val")
+
+cr_pos <- cr_tab[which(cr_tab$Cor>0), ]
+cr_neg <- cr_tab[which(cr_tab$Cor<0), ]
+cr_pos <- cr_pos[order(cr_pos$Cor, decreasing = TRUE), ]
+cr_neg <- cr_neg[order(cr_neg$Cor, decreasing = FALSE), ]
+
+colnames(cr_pos) <- c("Positive Correlation", "P-Value")
+colnames(cr_neg) <- c("Negative Correlation", "P-Value")
+kable(list(cr_pos, cr_neg),caption = c(""), format = "html", booktabs = TRUE, digits = 3 ) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed"), font_size = 14, full_width = F) 
+
+
+```
+## De analysis of Her2 patients and matched normals
+```{r Her2_DE_Analysis}
+dataSubt <- TCGAquery_subtype(tumor = cancer)
+her2 <- subset(dataSubt,  BRCA_Subtype_PAM50 == "Her2" )
+her2_names <- her2$patient
+
+samplesTP_her2 <- samplesTP[which(substr(samplesTP,1,12)%in% her2_names)]
+samplesNT_her2 <- samplesNT[which(substr(samplesNT,1,12)%in% her2_names)]
+samplesMatchedTP_her2 <- samplesTP_her2[which(substr(samplesTP_her2,1,12) %in% substr(samplesNT_her2,1,12))]
+dE <- TCGAbiolinks::TCGAanalyze_DEA(mat1  = dataNorm[,samplesTP_her2],
+                                    mat2  = dataNorm[,samplesNT_her2],
+                                    Cond1type = "her2-Tumor", Cond2type ="her2-Normal", method = "glmLRT", fdr.cut = 0.01, logFC.cut = 1.5)
+dataDEGsFiltLevel <- TCGAanalyze_LevelTab(dE,"her2-Tumor","her2-Normal",
+                                dataNorm[,samplesTP_her2],dataNorm[,samplesNT_her2])
+dE_CJ <- dataDEGsFiltLevel[which(rownames(dataDEGsFiltLevel) %in% CJ_30_genes),]
+dE_CJ <- dE_CJ[order(abs(dE_CJ$logFC), decreasing = TRUE),]
+kable(dE_CJ,caption = c("DE analysis"), format = "html", booktabs = TRUE, digits = 3 ) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed"), fixed_thead = T, font_size = 10, full_width = F) 
+
+#matched
+dE <- TCGAbiolinks::TCGAanalyze_DEA(mat1  = dataNorm[,samplesMatchedTP_her2],
+                                    mat2  = dataNorm[,samplesNT_her2],
+                                    Cond1type = "her2-Tumor", Cond2type ="her2-Normal", method = "glmLRT", fdr.cut = 0.01, logFC.cut = 1.5)
+dataDEGsFiltLevel <- TCGAanalyze_LevelTab(dE,"her2-Tumor","her2-Normal",
+                                dataNorm[samplesMatchedTP_her2],dataNorm[,samplesNT_her2])
+dE_CJ <- dataDEGsFiltLevel[which(rownames(dataDEGsFiltLevel) %in% CJ_30_genes),]
+dE_CJ <- dE_CJ[order(abs(dE_CJ$logFC), decreasing = TRUE),]
+kable(dE_CJ,caption = c("DE analysis"), format = "html", booktabs = TRUE, digits = 3 ) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed"), fixed_thead = T, font_size = 10, full_width = F) 
+
+```
+<!-- ## DE analysis of matched tumor and normal samples -->
+<!-- DE analysis of matched 113 BRCA tumour samples with 113 normal samples of breast cancer -->
+<!-- ```{r DE} -->
+<!-- # # query <- GDCquery(project = "TCGA-BRCA", -->
+<!-- # #                            data.category = "Gene expression", -->
+<!-- # #                            data.type = "Gene expression quantification", -->
+<!-- # #                            platform = "Illumina HiSeq",  -->
+<!-- # #                            file.type  = "normalized_results", -->
+<!-- # #                            experimental.strategy = "RNA-Seq", -->
+<!-- # #                            legacy = TRUE,sample.type = "Solid Tissue Normal") -->
+<!-- # #  -->
+<!-- # # GDCdownload(query, method = "api", files.per.chunk = 200) -->
+<!-- # # NormalBRCA <- GDCprepare(query = query, -->
+<!-- # #                           save = TRUE, -->
+<!-- # #                           summarizedExperiment = TRUE, -->
+<!-- # #                           save.filename = "BRCANormal.rda") -->
+<!--  NormalBRCA <- load("BRCANormal.rda") -->
+<!-- NormalBRCA <- data -->
+
+<!-- # matchedBarcodes <- substr(NormalBRCA$barcode, 1, 12) -->
+<!-- #  -->
+<!-- # # query <- GDCquery(project = "TCGA-BRCA", -->
+<!-- # #                            data.category = "Gene expression", -->
+<!-- # #                            data.type = "Gene expression quantification", -->
+<!-- # #                            platform = "IlluminaHiSeq_RNASeqV2",  -->
+<!-- # #                            file.type  = "normalized_results", -->
+<!-- # #                            experimental.strategy = "RNA-Seq", -->
+<!-- # #                            legacy = TRUE, sample.type = "Primary solid Tumor", barcode = matchedBarcodes, level = 3) -->
+<!-- # # GDCdownload(query, method = "api", files.per.chunk = 200,  type = "rsem.genes.results") -->
+<!-- # # TumorBRCA <- GDCprepare(query = query, -->
+<!-- # #                           save = TRUE, -->
+<!-- # #                           summarizedExperiment = TRUE, -->
+<!-- # #                           save.filename = "BRCATumor.rda") -->
+<!--  load(file = "BRCATumor.rda") -->
+<!--  TumorBRCA <- data -->
+<!-- # mat1 = assay(NormalBRCA,"normalized_count") -->
+<!-- # mat2 = assay(TumorBRCA, "normalized_count") -->
+<!-- # #colnames(mat1) <- substr(colnames(mat1), 1, 12) -->
+<!-- # #colnames(mat2) <- substr(colnames(mat2), 1, 12) -->
+
+<!-- # query <- GDCquery(project = "TCGA-BRCA", -->
+<!-- #                             data.category = "Gene expression", -->
+<!-- #                             data.type = "Gene expression quantification", -->
+<!-- #                             platform = "Illumina HiSeq",  -->
+<!-- #                             file.type  = "normalized_results", -->
+<!-- #                             experimental.strategy = "RNA-Seq", -->
+<!-- #                             legacy = TRUE) -->
+<!-- # GDCdownload(query, method = "api", files.per.chunk = 200) -->
+<!-- #  -->
+<!-- # BRCA <- GDCprepare(query = query, -->
+<!-- #                            save = TRUE, -->
+<!-- #                            summarizedExperiment = TRUE, -->
+<!-- #                            save.filename = "BRCA.rda") -->
+<!-- dataNormT <- TCGAbiolinks::TCGAanalyze_Normalization(TumorBRCA, geneInfo) -->
+<!-- dataNormP <- TCGAbiolinks::TCGAanalyze_Normalization(NormalBRCA, geneInfo) -->
+
+<!-- dataFilt <- dataNorm # TCGAanalyze_Filtering(tabDF = dataNorm, method = "quantile", qnt.cut = 0) -->
+
+<!-- #dataFilt <- TCGAanalyze_Filtering(tabDF = BRCA, method = "quantile", qnt.cut = 0.25) -->
+<!-- # samplesNT <- TCGAquery_SampleTypes(colnames(dataFilt), typesample = c("NT")) -->
+<!-- # samplesTP <- TCGAquery_SampleTypes(colnames(dataFilt), typesample = c("TP")) -->
+
+<!-- dE <- TCGAbiolinks::TCGAanalyze_DEA(mat1  = dataNormT, -->
+<!--                                     mat2  = dataNormP, -->
+<!--                                     Cond1type = "Tumor", Cond2type = "Normal", -->
+<!--                                     method = "exactTest", -->
+<!--                                     fdr.cut = 0.01, -->
+<!--                                     logFC.cut = 1) -->
+<!-- dataDEGsFiltLevel <- TCGAanalyze_LevelTab(dE,"Tumor","Normal", -->
+<!--                                 dataNormT,dataNormP) -->
+<!-- dE_CJ <- dataDEGsFiltLevel[which(rownames(dataDEGsFiltLevel) %in% CJ_30_genes),] -->
+<!-- dE_CJ <- dE_CJ[order(abs(dE_CJ$logFC), decreasing = TRUE),] -->
+<!-- print(dE_CJ) -->
+<!-- ``` -->
+
+
+
+
+
+
+
+
+

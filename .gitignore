@@ -4,3 +4,4 @@
 .Ruserdata
 *.Rproj
 *Firebrowse_download
+*.Rmd
